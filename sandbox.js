@@ -455,7 +455,33 @@ const emptyMap = map`
 ................................................................................................................................................................`
 setMap(emptyMap)
 
-const selectionSpeed = 2
+
+
+class Stone {
+  constructor(x, y) {
+    this.x = x
+    this.y = y
+    this.colors = [gray, lightGray]
+    this.color = this.colors[(x+y)%this.colors.length]
+  }
+  step() {}
+}
+
+class Sand {
+  
+  constructor(x, y) {
+    this.x = x
+    this.y = y
+    this.colors = [yellow, olive, orange]
+    this.color = this.colors[(x+y)%this.colors.length]
+  }
+  step() {}
+}
+
+
+
+
+const selectionSpeed = 1
 
 onInput("w", () => {
   selectionBoxPosition.y -= selectionSpeed
@@ -482,8 +508,7 @@ onInput("j", ()=> {
   redrawSelectionBox()
 })
 onInput("k", ()=> {
-  cellGrid[selectionBoxPosition.x][selectionBoxPosition.y] = new Sand(selectionBoxPosition.x, selectionBoxPosition.y)
-  console.log(cellGrid[selectionBoxPosition.x][selectionBoxPosition.y])
+  drawBrush()
 })
 
 let selectionBoxBlink = false
@@ -515,69 +540,44 @@ function drawRect(x, y, sizeX, sizeY, fillType, borderWidth, borderType) {
     }
   } 
 }
+
+function drawBrush() {
+ for (let i = 1; i <= brushSize; i++) {
+    for (let j = 1; j <= brushSize; j++) {
+      cellGrid[selectionBoxPosition.x+i][selectionBoxPosition.y+j] = new Sand(selectionBoxPosition.x+i, selectionBoxPosition.y+j)
+    }
+  }
+}
   
 setInterval(()=>{
   selectionBoxBlink = !selectionBoxBlink
 }, 500)
 
 
-let oldCellGrid
-
+let oldCellGrid = new Array(width())
 let cellGrid = new Array(width())
 for (var i = 0; i < cellGrid.length; i++) {
+  oldCellGrid[i] = new Array(height()-7)
   cellGrid[i] = new Array(height()-7);
 }
 
 setInterval(()=>{
-  let gridChanges = cellGrid
+  for (var x = 0; x < cellGrid.length; x++) {
+    for (var y = 0; y < cellGrid[x].length; y++) {
+      if((!cellGrid[x][y] ^ !oldCellGrid[x][y]) || cellGrid[x][y]?.type!=oldCellGrid[x][y]?.type){
+        oldCellGrid[x][y] = cellGrid[x][y]
 
-  if(oldCellGrid){
-    console.log(cellGrid[selectionBoxPosition.x][selectionBoxPosition.y])
-    console.log(oldCellGrid[selectionBoxPosition.x][selectionBoxPosition.y])
-    for (var x = 0; x < cellGrid.length; x++) {
-      for (var y = 0; y < cellGrid[x].length; y++) {
-        if(cellGrid[x][y]==oldCellGrid[x][y]) {
-          gridChanges[x][y] = "unchanged"
-        }
-      }
-    }
-  }
-  
-  for (var x = 0; x < gridChanges.length; x++) {
-    for (var y = 0; y < gridChanges[x].length; y++) {
-      if(gridChanges[x][y]!="unchanged"){
         clearTile(x, y+7)
-        if(gridChanges[x][y]!=undefined){
-          addSprite(x, y+7, gridChanges[x][y].color)
+        if(cellGrid[x][y]!=undefined){
+          addSprite(x, y+7, cellGrid[x][y].color)
         }
       }
     }
   }
 
-  oldCellGrid = cellGrid
   redrawSelectionBox()
-}, 0)
+}, 200)
 
 
-class Stone {
-  constructor(x, y) {
-    this.x = x
-    this.y = y
-    this.colors = [gray, lightGray]
-    this.color = this.colors[(x+y)%this.colors.length]
-  }
-  step() {}
-}
-
-class Sand {
-  
-  constructor(x, y) {
-    this.x = x
-    this.y = y
-    this.colors = [yellow, olive]
-    this.color = this.colors[(x+y)%this.colors.length]
-  }
-  step() {}
-}
 
 redrawUI()
