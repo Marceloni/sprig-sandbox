@@ -322,7 +322,7 @@ HHHHHHHHHHHHHHHH`],
 9999999999999999`]
 )
 
-setSolids([])
+setSolids([black, gray, lightGray, white, red, brown, lightBlue, blue, yellow, olive, lime, green, pink, purple, orange])
 
 const emptyMap = map`
 ................................................................................................................................................................
@@ -481,20 +481,20 @@ onInput("j", ()=> {
   redrawUI()
   redrawSelectionBox()
 })
+onInput("k", ()=> {
+  cellGrid[selectionBoxPosition.x][selectionBoxPosition.y] = new Sand(selectionBoxPosition.x, selectionBoxPosition.y)
+  console.log(cellGrid[selectionBoxPosition.x][selectionBoxPosition.y])
+})
+
+let selectionBoxBlink = false
 
 function redrawSelectionBox() {
   selectionBoxPosition.x = Math.min(Math.max(selectionBoxPosition.x, 0), width()-brushSize-2)
-  selectionBoxPosition.y = Math.min(Math.max(selectionBoxPosition.y, 7), height()-brushSize-2)
+  selectionBoxPosition.y = Math.min(Math.max(selectionBoxPosition.y, 0), height()-brushSize-2-7)
   
   getAll(selectionBox).forEach((sprite)=>{sprite.remove()})
   getAll(selectionBox2).forEach((sprite)=>{sprite.remove()})
-  for (let i = 0; i <= brushSize+1; i++) {
-    for (let j = 0; j <= brushSize+1; j++) {
-      if(i==brushSize+1||i==0 || j==brushSize+1||j==0){
-        addSprite(selectionBoxPosition.x + i, selectionBoxPosition.y + j, selectionBox);
-      }
-    }
-  }
+  drawRect(selectionBoxPosition.x, selectionBoxPosition.y+7, brushSize+2, brushSize+2, undefined, 1, selectionBoxBlink?selectionBox2:selectionBox)
 }
 
 function redrawUI() {
@@ -508,24 +508,76 @@ function drawRect(x, y, sizeX, sizeY, fillType, borderWidth, borderType) {
  for (let i = 0; i <= sizeX-1; i++) {
     for (let j = 0; j <= sizeY-1; j++) {
       if(i < borderWidth || i >= sizeX-borderWidth || j < borderWidth || j >= sizeY-borderWidth) {
-        addSprite(x + i, y + j, borderType);
+        if(borderType){addSprite(x + i, y + j, borderType)}
       }else {
-        addSprite(x + i, y + j, fillType);
+        if(fillType){addSprite(x + i, y + j, fillType)}
       }
     }
   } 
 }
   
 setInterval(()=>{
-  let type1 = getAll(selectionBox)
-  let type2 = getAll(selectionBox2)
-  type1.forEach((sprite)=>{sprite.type = selectionBox2})
-  type2.forEach((sprite)=>{sprite.type = selectionBox})
+  selectionBoxBlink = !selectionBoxBlink
 }, 500)
 
-setInterval(()=>{
 
+let oldCellGrid
+
+let cellGrid = new Array(width())
+for (var i = 0; i < cellGrid.length; i++) {
+  cellGrid[i] = new Array(height()-7);
+}
+
+setInterval(()=>{
+  let gridChanges = cellGrid
+
+  if(oldCellGrid){
+    console.log(cellGrid[selectionBoxPosition.x][selectionBoxPosition.y])
+    console.log(oldCellGrid[selectionBoxPosition.x][selectionBoxPosition.y])
+    for (var x = 0; x < cellGrid.length; x++) {
+      for (var y = 0; y < cellGrid[x].length; y++) {
+        if(cellGrid[x][y]==oldCellGrid[x][y]) {
+          gridChanges[x][y] = "unchanged"
+        }
+      }
+    }
+  }
+  
+  for (var x = 0; x < gridChanges.length; x++) {
+    for (var y = 0; y < gridChanges[x].length; y++) {
+      if(gridChanges[x][y]!="unchanged"){
+        clearTile(x, y+7)
+        if(gridChanges[x][y]!=undefined){
+          addSprite(x, y+7, gridChanges[x][y].color)
+        }
+      }
+    }
+  }
+
+  oldCellGrid = cellGrid
+  redrawSelectionBox()
 }, 0)
 
+
+class Stone {
+  constructor(x, y) {
+    this.x = x
+    this.y = y
+    this.colors = [gray, lightGray]
+    this.color = this.colors[(x+y)%this.colors.length]
+  }
+  step() {}
+}
+
+class Sand {
+  
+  constructor(x, y) {
+    this.x = x
+    this.y = y
+    this.colors = [yellow, olive]
+    this.color = this.colors[(x+y)%this.colors.length]
+  }
+  step() {}
+}
+
 redrawUI()
-redrawSelectionBox()
