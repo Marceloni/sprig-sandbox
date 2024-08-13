@@ -455,7 +455,6 @@ setMap(emptyMap)
 
 class Stone {
   colors = [gray, lightGray]
-  hasStepped = false
   constructor(x, y) {
     this.x = x
     this.y = y
@@ -466,26 +465,24 @@ class Stone {
 
 class Water {
   colors = [blue, lightBlue]
-  hasStepped = false
   constructor(x, y) {
     this.x = x
     this.y = y
     this.color = this.colors[(x+y)%this.colors.length]
   }
   step() {
-    this.hasStepped = true
     if(this.y<height()-8 && cellGrid[this.x][this.y+1] == undefined){
       cellGrid[this.x][this.y+1] = cellGrid[this.x][this.y]
       cellGrid[this.x][this.y] = undefined
       this.y++
       this.color = this.colors[(this.x+this.y)%this.colors.length]
-    }else if(this.y<height()-8 && this.x>0 && cellGrid[this.x-1][this.y+1] == undefined ) {
+    }else if(this.y<height()-8 && this.x>0 && cellGrid[this.x-1][this.y+1] == undefined && cellGrid[this.x-1][this.y]==undefined) {
       cellGrid[this.x-1][this.y+1] = cellGrid[this.x][this.y]
       cellGrid[this.x][this.y] = undefined
       this.y++
       this.x--
       this.color = this.colors[(this.x+this.y)%this.colors.length]
-    }else if(this.y<height()-8 && this.x<width()-1 && cellGrid[this.x+1][this.y+1] == undefined) {
+    }else if(this.y<height()-8 && this.x<width()-1 && cellGrid[this.x+1][this.y+1] == undefined && cellGrid[this.x+1][this.y]==undefined) {
       cellGrid[this.x+1][this.y+1] = cellGrid[this.x][this.y]
       cellGrid[this.x][this.y] = undefined
       this.y++
@@ -502,51 +499,37 @@ class Water {
         cellGrid[this.x-1][this.y] = cellGrid[this.x][this.y]
         cellGrid[this.x][this.y] = undefined
         this.x--
-        this.color = this.colors[(this.x+this.y)%this.colors.length]
+        //this.color = this.colors[(this.x+this.y)%this.colors.length]
       }if(spaceRight){
         cellGrid[this.x+1][this.y] = cellGrid[this.x][this.y]
         cellGrid[this.x][this.y] = undefined
         this.x++
-        this.color = this.colors[(this.x+this.y)%this.colors.length]
+        //this.color = this.colors[(this.x+this.y)%this.colors.length]
       }
     }
   }
 }
 
-function checkLastAvailableSpot(x, y, length, direction){
-  let lastSpot = 0
-  for(var i = 1; i <= length; i++){
-    if(direction){
-      if(x+i < width() && cellGrid[x+i][y]==undefined){lastSpot = i}else {break}
-    }else {
-      if(x-i >= 0 && cellGrid[x-i][y]==undefined){lastSpot = i}else {break}
-    }
-  }
-  return lastSpot
-}
-
 class Sand {
   colors = [yellow, olive, orange]
-  hasStepped = false
   constructor(x, y) {
     this.x = x
     this.y = y
     this.color = this.colors[(x+y)%this.colors.length]
   }
   step() {
-    this.hasStepped = true
     if(this.y<height()-8 && cellGrid[this.x][this.y+1] == undefined){
       cellGrid[this.x][this.y+1] = cellGrid[this.x][this.y]
       cellGrid[this.x][this.y] = undefined
       this.y++
       //this.color = this.colors[(this.x+this.y)%this.colors.length]
-    }else if(this.y<height()-8 && this.x>0 && cellGrid[this.x-1][this.y+1] == undefined ) {
+    }else if(this.y<height()-8 && this.x>0 && cellGrid[this.x-1][this.y+1] == undefined && cellGrid[this.x-1][this.y]==undefined) {
       cellGrid[this.x-1][this.y+1] = cellGrid[this.x][this.y]
       cellGrid[this.x][this.y] = undefined
       this.y++
       this.x--
       //this.color = this.colors[(this.x+this.y)%this.colors.length]
-    }else if(this.y<height()-8 && this.x<width()-1 && cellGrid[this.x+1][this.y+1] == undefined) {
+    }else if(this.y<height()-8 && this.x<width()-1 && cellGrid[this.x+1][this.y+1] == undefined && cellGrid[this.x+1][this.y]==undefined) {
       cellGrid[this.x+1][this.y+1] = cellGrid[this.x][this.y]
       cellGrid[this.x][this.y] = undefined
       this.y++
@@ -559,7 +542,8 @@ class Sand {
 let cellTypes = {
   "Sand": {class: Sand, mainColor: yellow},
   "Stone": {class: Stone, mainColor: gray},
-  "Water": {class: Water, mainColor: lightBlue}
+  "Water": {class: Water, mainColor: lightBlue},
+  "Eraser": {mainColor: brown}
 }
 let selectedCellType = "Stone"
 
@@ -585,19 +569,25 @@ onInput("d", () => {
 })
 
 
-onInput("j", ()=> {
+onInput("j", () => {
   let brushSizes = [1, 2, 3, 5, 10, 20]
   brushSize = brushSizes[(brushSizes.indexOf(brushSize)+1)%(brushSizes.length)]
   redrawUI()
   redrawSelectionBox()
 })
-onInput("k", ()=> {
+onInput("k", () => {
   drawBrush()
 })
-onInput("l", ()=> {
+onInput("l", () => {
   let cellTypesKeys = Object.keys(cellTypes)
   selectedCellType = cellTypesKeys[(cellTypesKeys.indexOf(selectedCellType)+1) % cellTypesKeys.length];
   redrawUI()
+})
+onInput("i", () => {
+  cellGrid = new Array(width())
+  for (var i = 0; i < cellGrid.length; i++) {
+    cellGrid[i] = new Array(height()-7)
+  }
 })
 
 
@@ -643,7 +633,11 @@ function drawRect(x, y, sizeX, sizeY, fillType, borderWidth, borderType, clear) 
 function drawBrush() {
  for (let i = 1; i <= brushSize; i++) {
     for (let j = 1; j <= brushSize; j++) {
-      cellGrid[selectionBoxPosition.x+i][selectionBoxPosition.y+j] = new cellTypes[selectedCellType].class(selectionBoxPosition.x+i, selectionBoxPosition.y+j)
+      if(selectedCellType == "Eraser"){
+        cellGrid[selectionBoxPosition.x+i][selectionBoxPosition.y+j] = undefined
+      }else {
+        cellGrid[selectionBoxPosition.x+i][selectionBoxPosition.y+j] = new cellTypes[selectedCellType].class(selectionBoxPosition.x+i, selectionBoxPosition.y+j)
+      }
     }
   }
 }
@@ -690,15 +684,8 @@ function stepCells() {
   }
   for (var x = 0; x < cellGrid.length; x++) {
     for (var y = cellGrid[x].length; y >= 0; y--) {
-      if(cellGrid[x][y]!=undefined && !cellGrid[x][y].hasStepped){
-        cellGrid[x][y].step()
-      }
-    }
-  }
-  for (var x = 0; x < cellGrid.length; x++) {
-    for (var y = cellGrid[x].length; y >= 0; y--) {
       if(cellGrid[x][y]!=undefined){
-        cellGrid[x][y].hasStepped = false
+        cellGrid[x][y].step()
       }
     }
   }
