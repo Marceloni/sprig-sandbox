@@ -455,6 +455,7 @@ setMap(emptyMap)
 
 class Stone {
   colors = [gray, lightGray]
+  hasStepped = false
   constructor(x, y) {
     this.x = x
     this.y = y
@@ -465,51 +466,14 @@ class Stone {
 
 class Water {
   colors = [blue, lightBlue]
+  hasStepped = false
   constructor(x, y) {
     this.x = x
     this.y = y
     this.color = this.colors[(x+y)%this.colors.length]
   }
   step() {
-    if(this.y<height()-8 && cellGrid[this.x][this.y+1] == undefined){
-      cellGrid[this.x][this.y+1] = cellGrid[this.x][this.y]
-      cellGrid[this.x][this.y] = undefined
-      this.y++
-      this.color = this.colors[(this.x+this.y)%this.colors.length]
-    }else {
-      let leftSpot = checkLastAvailableSpot(this.x, this.y, 5, false)
-      console.log(leftSpot)
-      let rightSpot = checkLastAvailableSpot(this.x, this.y, 5, true)
-      if(leftSpot!=0){
-        cellGrid[this.x-leftSpot][this.y] = cellGrid[this.x][this.y]
-        cellGrid[this.x][this.y] = undefined
-        this.x -= leftSpot
-        this.color = this.colors[(this.x+this.y)%this.colors.length]
-      }
-    }
-  }
-}
-
-function checkLastAvailableSpot(x, y, length, direction){
-  let lastSpot = 0
-  for(var i = 1; i <=length; i++){
-    if(direction){
-      if(x+i < width() && cellGrid[x+i][y]==undefined){lastSpot = i}else {break}
-    }else {
-      if(x-1 >= 0 && cellGrid[x-i][y]==undefined){lastSpot = i}else {break}
-    }
-  }
-  return lastSpot
-}
-
-class Sand {
-  colors = [yellow, olive, orange]
-  constructor(x, y) {
-    this.x = x
-    this.y = y
-    this.color = this.colors[(x+y)%this.colors.length]
-  }
-  step() {
+    this.hasStepped = true
     if(this.y<height()-8 && cellGrid[this.x][this.y+1] == undefined){
       cellGrid[this.x][this.y+1] = cellGrid[this.x][this.y]
       cellGrid[this.x][this.y] = undefined
@@ -527,6 +491,67 @@ class Sand {
       this.y++
       this.x++
       this.color = this.colors[(this.x+this.y)%this.colors.length]
+    }else {
+      let spaceLeft = this.x>0 ? cellGrid[this.x-1][this.y] == undefined : false
+      let spaceRight = this.x<width()-1 ? cellGrid[this.x+1][this.y] == undefined : false
+
+      if(spaceLeft && spaceRight){
+        if(Math.random() < 0.5){spaceLeft=false}else{spaceRight=false}
+      }
+      if(spaceLeft){
+        cellGrid[this.x-1][this.y] = cellGrid[this.x][this.y]
+        cellGrid[this.x][this.y] = undefined
+        this.x--
+        this.color = this.colors[(this.x+this.y)%this.colors.length]
+      }if(spaceRight){
+        cellGrid[this.x+1][this.y] = cellGrid[this.x][this.y]
+        cellGrid[this.x][this.y] = undefined
+        this.x++
+        this.color = this.colors[(this.x+this.y)%this.colors.length]
+      }
+    }
+  }
+}
+
+function checkLastAvailableSpot(x, y, length, direction){
+  let lastSpot = 0
+  for(var i = 1; i <= length; i++){
+    if(direction){
+      if(x+i < width() && cellGrid[x+i][y]==undefined){lastSpot = i}else {break}
+    }else {
+      if(x-i >= 0 && cellGrid[x-i][y]==undefined){lastSpot = i}else {break}
+    }
+  }
+  return lastSpot
+}
+
+class Sand {
+  colors = [yellow, olive, orange]
+  hasStepped = false
+  constructor(x, y) {
+    this.x = x
+    this.y = y
+    this.color = this.colors[(x+y)%this.colors.length]
+  }
+  step() {
+    this.hasStepped = true
+    if(this.y<height()-8 && cellGrid[this.x][this.y+1] == undefined){
+      cellGrid[this.x][this.y+1] = cellGrid[this.x][this.y]
+      cellGrid[this.x][this.y] = undefined
+      this.y++
+      //this.color = this.colors[(this.x+this.y)%this.colors.length]
+    }else if(this.y<height()-8 && this.x>0 && cellGrid[this.x-1][this.y+1] == undefined ) {
+      cellGrid[this.x-1][this.y+1] = cellGrid[this.x][this.y]
+      cellGrid[this.x][this.y] = undefined
+      this.y++
+      this.x--
+      //this.color = this.colors[(this.x+this.y)%this.colors.length]
+    }else if(this.y<height()-8 && this.x<width()-1 && cellGrid[this.x+1][this.y+1] == undefined) {
+      cellGrid[this.x+1][this.y+1] = cellGrid[this.x][this.y]
+      cellGrid[this.x][this.y] = undefined
+      this.y++
+      this.x++
+      //this.color = this.colors[(this.x+this.y)%this.colors.length]
     }
   }
 }
@@ -574,6 +599,7 @@ onInput("l", ()=> {
   selectedCellType = cellTypesKeys[(cellTypesKeys.indexOf(selectedCellType)+1) % cellTypesKeys.length];
   redrawUI()
 })
+onInput("i", ()=>{stepCells()})
 
 
 let selectionBoxPixels = []
@@ -598,7 +624,6 @@ function redrawSelectionBox() {
 function redrawUI() {
   clearText()
   addText("Brush:"+brushSize, { x: 14-String(brushSize).length, y: 0, color: color`9` })
-  console.log(cellTypes[selectedCellType].mainColor)
   drawRect(0, 0, 7, 7, cellTypes[selectedCellType].mainColor, 1, black, true)
   addText(selectedCellType, { x: 1, y:0, color: color`9`})
 }
@@ -633,12 +658,25 @@ for (var i = 0; i < cellGrid.length; i++) {
 }
 
 setInterval(()=>{
+}, 0)
+
+
+
+function moveCell(oldX, oldY, newX, newY) {
+  cellGrid[newX][newY] = cellGrid[oldX][oldY]
+  cellGrid[oldX][oldY] = undefined
+  cellGrid[newX][newY].x = newX
+  cellGrid[newX][newY].y = newY
+}
+
+
+
+function stepCells() {
   for (var x = 0; x < cellGrid.length; x++) {
     for (var y = cellGrid[x].length; y >= 0; y--) {
       if((!cellGrid[x][y] ^ !oldCellGrid[x][y]) || cellGrid[x][y]?.type!=oldCellGrid[x][y]?.type || cellGrid[x][y]?.color!=oldCellGrid[x][y]?.color){
         oldCellGrid[x][y] = cellGrid[x][y]
         clearTile(x, y+7)
-        selectionBoxPosition.x, selectionBoxPosition.y+7, brushSize+2, brushSize+2
         
         if(cellGrid[x][y]!=undefined){
           addSprite(x, y+7, cellGrid[x][y].color)
@@ -648,13 +686,23 @@ setInterval(()=>{
           addSprite(x, y+7, selectionBox)
         }
       }
-      if(cellGrid[x][y]!=undefined){
+    }
+  }
+  for (var x = 0; x < cellGrid.length; x++) {
+    for (var y = cellGrid[x].length; y >= 0; y--) {
+      if(cellGrid[x][y]!=undefined && !cellGrid[x][y].hasStepped){
         cellGrid[x][y].step()
       }
     }
   }
-}, 0)
-
+  for (var x = 0; x < cellGrid.length; x++) {
+    for (var y = cellGrid[x].length; y >= 0; y--) {
+      if(cellGrid[x][y]!=undefined){
+        cellGrid[x][y].hasStepped = false
+      }
+    }
+  }
+}
 
 redrawSelectionBox()
 redrawUI()
