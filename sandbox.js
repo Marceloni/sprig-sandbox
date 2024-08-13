@@ -2,8 +2,8 @@
 First time? Check out the tutorial game:
 https://sprig.hackclub.com/gallery/getting_started
 
-@title: 
-@author: 
+@title: Sandbox
+@author: Marceloni
 @tags: []
 @addedOn: 2024-00-00
 */
@@ -599,7 +599,6 @@ onInput("l", ()=> {
   selectedCellType = cellTypesKeys[(cellTypesKeys.indexOf(selectedCellType)+1) % cellTypesKeys.length];
   redrawUI()
 })
-onInput("i", ()=>{stepCells()})
 
 
 let selectionBoxPixels = []
@@ -658,6 +657,7 @@ for (var i = 0; i < cellGrid.length; i++) {
 }
 
 setInterval(()=>{
+  stepCells()
 }, 0)
 
 
